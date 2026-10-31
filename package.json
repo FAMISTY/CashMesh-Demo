@@ -1,0 +1,1 @@
+{"name":"cashmesh-demo","private":true,"type":"module","scripts":{"test:dom":"node tests/import-dom.mjs"},"devDependencies":{"happy-dom":"21.0.4"}}
