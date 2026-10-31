@@ -29,3 +29,4 @@ jobs:
       - run: node tests/spending-history.cjs
       - run: node tests/history-dom.mjs
       - run: node tests/setup-assessment-dom.mjs
+      - run: node tests/combined-settings-style.mjs
