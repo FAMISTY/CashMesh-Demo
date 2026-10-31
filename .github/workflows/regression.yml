@@ -23,3 +23,4 @@ jobs:
       - run: node tests/cleanup-dom.mjs
       - run: node tests/default-funding.cjs
       - run: node tests/funding-review-dom.mjs
+      - run: node tests/direction.cjs
