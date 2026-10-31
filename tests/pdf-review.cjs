@@ -1,8 +1,11 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert');const elements=new Map();function el(id){if(!elements.has(id))elements.set(id,{value:'',checked:false,innerHTML:'',textContent:'',className:'',dataset:{},files:[],showModal(){},close(){},querySelectorAll(){return []}});return elements.get(id)}el('filter').value='all';el('periods').value='6';el('delay').value='30';const ctx={document:{getElementById:el,querySelectorAll:()=>[],createElement:()=>({click(){}})},localStorage:{getItem:()=>null,setItem(){},removeItem(){}},crypto:require('crypto').webcrypto,window:{},console,Date,TextDecoder,Blob,URL,setTimeout};vm.createContext(ctx);for(const m of fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g))vm.runInContext(m[1],ctx);
 const C=ctx.window.CashMesh;
-vm.runInContext("batches=[{uid:'pdf',name:'bank.pdf',isPdf:true,heads:['交易日期','交易金额'],rows:[],emptyPages:[]}]",ctx);
-ctx.document.querySelector=()=>({checked:false});assert.throws(()=>C.importRows(),/勾选确认/);
-ctx.document.querySelector=selector=>selector.includes('data-pdf-confirm')?{checked:true}:selector.includes('data-pdf-review')?{value:'交易日期,交易金额\\n2026-10-01,wrong'.replace('\\n','\n')}:{value:'银行'};
-assert.throws(()=>C.importRows(),/未核对完成/);
-vm.runInContext('batches[0].emptyPages=[2]',ctx);assert.throws(()=>C.importRows(),/OCR/);
-console.log('PASS: PDF confirmation requirement, invalid amount blocks import, partial image pages block incomplete imports.');
+const heads=['交易日期','交易金额','收支类型','交易类型','商户','分类','结算方式','交易单号','PDF页码'];
+let rows=[['2024-01-02','-25.00','支出','消费','商户A','未分类','cash','','1'],['2024-01-03','','','消费','商户B','未分类','cash','','1']],selected=[true,false];
+vm.runInContext('batches=[]',ctx);ctx.inputBatch={uid:'pdf',name:'synthetic-bank.pdf',isPdf:true,heads,rows,emptyPages:[],pageCount:1,reviewReasons:['','金额不明确'],rawText:'合成测试',warnings:[],adapter:'ICBC-debit-v1'};vm.runInContext('batches=[inputBatch]',ctx);
+const mapping={date:0,amount:1,direction:2,kind:3,merchant:4,category:5,settlement:6,id:7,source:null,linked:null};
+ctx.document.querySelectorAll=selector=>selector.includes('data-batch-map')?Object.entries(mapping).map(([key,v])=>({dataset:{map:key},value:v===null?'':String(v)})):[];
+ctx.document.querySelector=selector=>{if(selector.includes('data-source'))return {value:'合成银行账户'};const i=Number(selector.match(/:(\d+)/)[1]);if(selector.includes('data-pdf-select'))return {checked:selected[i]};const col=selector.includes('pdf-date')?0:selector.includes('pdf-amount')?1:selector.includes('pdf-direction')?2:4;return {value:rows[i][col]}};
+C.importRows();assert.equal(C.getState().events.length,1);assert.equal(C.getState().events[0].status,'confirmed');assert.equal(vm.runInContext('batches[0].rows.length',ctx),1);assert.match(el('mapping').innerHTML,/需核对/);
+rows=[['2024-01-03','75.00','支出','消费','商户B','未分类','cash','','1']];selected=[true];C.importRows();assert.equal(C.getState().events.length,2);assert.equal(vm.runInContext('batches.length',ctx),0);
+console.log('PASS: recognised rows import directly, unresolved rows remain editable, corrected rows import without re-importing previous rows.');

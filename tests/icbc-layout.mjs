@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';import {extractCandidateRows} from '../pdf-import.mjs';
+function item(str,x,y,width=str.length*7){return {str,width,transform:[0,7,-7,0,y,x]}}
+const headers=[item('交易日期',80,60),item('收入/支出金额',250,60),item('余额',350,60),item('对方户名',450,60),item('摘要',550,60)];
+const page={page:1,viewportTransform:[0,1,1,0,0,0],items:[item('中国工商银行借记账户历史明细（电子版）',100,20),item('起止日期：2024-01-01 — 2024-12-31',100,40),...headers,item('2024-01-02',70,80),item('12:34:56',70,88),item('-25.00',270,80),item('975.00',340,80),item('测试商户A',450,80),item('消费',550,80),item('2024-01-03',70,102),item('+100.00',270,102),item('1075.00',340,102),item('测试单位B',450,102),item('工资',550,102),item('下单时间：2026-10-31 15:32:47',100,160),{str:'水印文本',width:100,transform:[4,4,-4,4,80,80]}]};
+const r=extractCandidateRows([page]);assert.equal(r.rows.length,2);assert.equal(r.rows[0][1],'-25.00');assert.equal(r.rows[0][2],'支出');assert.equal(r.rows[1][1],'+100.00');assert.equal(r.rows[1][2],'收入');assert.equal(r.reviewReasons.filter(Boolean).length,0);assert.equal(r.rows[1][4],'测试单位B');assert.equal(r.rows.some(x=>x[0]==='2026-10-31'),false);
+const rotated=structuredClone(page);rotated.viewportTransform=[1,0,0,-1,0,200];rotated.items=page.items.map(i=>{const [a,b,c,d,y,x]=i.transform;return {...i,transform:[7,0,0,7,x,200-y]}});assert.deepEqual(extractCandidateRows([rotated]).rows,r.rows);
+const unsigned=structuredClone(page);unsigned.items.find(i=>i.str==='+100.00').str='100.00';assert.equal(extractCandidateRows([unsigned]).reviewReasons.filter(Boolean).length,1);
+console.log('PASS: ICBC rotated/normal layout, signed amount direction, metadata and diagonal watermark exclusion, balances and ambiguous sign.');

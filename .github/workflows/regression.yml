@@ -15,3 +15,4 @@ jobs:
       - run: node tests/regression.cjs
       - run: node tests/pdf-import.mjs
       - run: node tests/pdf-review.cjs
+      - run: node tests/icbc-layout.mjs
