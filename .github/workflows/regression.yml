@@ -25,3 +25,6 @@ jobs:
       - run: node tests/funding-review-dom.mjs
       - run: node tests/direction.cjs
       - run: node tests/budget-estimate.cjs
+      - run: node tests/bank-columns.mjs
+      - run: node tests/spending-history.cjs
+      - run: node tests/history-dom.mjs
