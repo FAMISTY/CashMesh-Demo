@@ -17,4 +17,7 @@ jobs:
       - run: node tests/pdf-import.mjs
       - run: node tests/pdf-review.cjs
       - run: node tests/icbc-layout.mjs
+      - run: node tests/auto-organize.cjs
+      - run: node tests/pdf-cleanup.mjs
+      - run: node tests/cleanup-dom.mjs
       - run: npm run test:dom
