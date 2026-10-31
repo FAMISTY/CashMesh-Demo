@@ -1,6 +1,6 @@
 // Text extraction only. No embedded PDF JavaScript or external links are executed.
 let cmapData;
-class LocalCMaps{async fetch({name}){cmapData??=fetch(new URL('./vendor/cmaps.json',import.meta.url)).then(r=>{if(!r.ok)throw Error('中文字体映射文件载入失败，请刷新重试');return r.json()});const maps=await cmapData;if(!maps[name])throw Error('不支持的PDF字体映射：'+name);const raw=atob(maps[name]);return {cMapData:Uint8Array.from(raw,c=>c.charCodeAt(0)),compressionType:1}}}
+class LocalCMaps{async fetch({name}){cmapData??=fetch(new URL('./vendor/cmaps.json',import.meta.url)).then(r=>{if(!r.ok)throw Error('中文字体映射文件载入失败，请刷新重试');return r.json()});const maps=await cmapData;if(!maps[name])throw Error('不支持的PDF字体映射：'+name);const raw=atob(maps[name]);return {cMapData:Uint8Array.from(raw,c=>c.charCodeAt(0)),compressionType:1,isCompressed:true}}}
 const HEADS=['交易日期','交易金额','收支类型','交易类型','商户','分类','结算方式','交易单号','PDF页码'];
 function linesFromItems(items,page){const lines=[];for(const item of items){if(!item.str?.trim())continue;const y=item.transform[5],x=item.transform[4];let line=lines.find(l=>Math.abs(l.y-y)<3);if(!line){line={y,page,cells:[]};lines.push(line)}line.cells.push({x,text:item.str.trim()})}return lines.sort((a,b)=>b.y-a.y).map(l=>({...l,cells:l.cells.sort((a,b)=>a.x-b.x),text:l.cells.sort((a,b)=>a.x-b.x).map(c=>c.text).join('  ')}))}
 const datePattern=/\b(20\d{2})[-/.年](\d{1,2})[-/.月](\d{1,2})日?/;
