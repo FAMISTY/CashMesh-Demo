@@ -8,3 +8,15 @@ C.setState(base());el('question').value='买6000元电脑，6期可以吗？';el
 assert.equal(C.month('2026-01-31',1),'2026-02-28');assert.throws(()=>C.cents('bad'));console.log('PASS: clarification continuation, period and delay edits, total fees, changed-period re-clarification, reset, under/full/over credit coverage, full refund, incomplete-result labels, click-to-send.');
 
 C.setState(base());C.answer('新问题');C.answer('买6000元电脑，6期可以吗？');const delayed=C.answer('晚一个月买呢');assert.match(delayed,/这次只看晚一点买/);assert.match(delayed,/现在购买/);assert.doesNotMatch(delayed,/请补充/);let jan=base();jan.start='2026-01-31';C.setState(jan);const feb=C.answer('晚一个月买呢');assert.match(feb,/2026-02-28/);assert.match(feb,/延期 28 天/);console.log('PASS: focused delay response without fee prerequisite and calendar-month date.');
+
+(async()=>{
+C.setState(base());el('platform').value='我的账单';
+const rows=[['交易日期','交易金额','收支类型','交易类型','商户','分类','结算方式','交易单号'],['2025-01-01',25,'支出','消费','午餐','餐饮','cash','shared']];
+function csvFile(name,data){const bytes=Buffer.from(data);return {name,size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)}}
+const csv=rows.map(r=>r.join(',')).join('\n'),files=['微信2024.csv','微信2025.csv','支付宝2025.csv','银行2025.csv','信用卡2025.csv'].map(name=>csvFile(name,csv));
+await C.loadFiles(files);assert.match(el('importMeta').textContent,/5 个文件/);
+const map={date:0,amount:1,direction:2,kind:3,merchant:4,category:5,settlement:6,id:7,source:null,linked:null};
+const reports=[];for(const f of files){const b=await C.parseBill(f);reports.push(C.importBatchRows(b,map,b.source))}
+assert.equal(reports.reduce((n,r)=>n+r.accepted,0),4);assert.equal(reports[1].duplicates,1);assert.equal(C.getState().events.length,4);assert.equal(C.getState().events[0].source_file,'微信2024.csv');assert.equal(C.getState().events.filter(e=>e.external==='shared').length,4);
+const reordered=[['金额','日期','商户'],[10,'2024-02-01','商店']];const wb=ctx.XLSX.utils.book_new();ctx.XLSX.utils.book_append_sheet(wb,ctx.XLSX.utils.aoa_to_sheet(reordered),'流水');const x=ctx.XLSX.write(wb,{type:'array',bookType:'xlsx'});const excel={name:'alipay.xlsx',size:x.byteLength,arrayBuffer:async()=>x};const xb=await C.parseBill(excel);const m={...map,amount:0,date:1,merchant:2,direction:null,kind:null,category:null,settlement:null,id:null};const xr=C.importBatchRows(xb,m,xb.source);assert.equal(xr.accepted,1);assert.equal(C.getState().events.at(-1).status,'pending');await C.loadFiles([...files,csvFile('broken.pdf','bad')]);assert.match(el('status').textContent,/1 个解析失败/);await assert.rejects(()=>C.loadFiles(Array(21).fill(files[0])),/最多20/);await assert.rejects(()=>C.parseBill({name:'big.csv',size:11*1024*1024}),/10MB/);console.log('PASS: five CSV files, mixed XLSX with different columns, overlapping-year dedupe, cross-source ID isolation, source filenames, failed-file isolation and limits.');
+})().catch(e=>{console.error(e);process.exitCode=1});
