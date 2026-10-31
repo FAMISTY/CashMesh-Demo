@@ -74,10 +74,18 @@ if(amountMatches.length>1&&!/手续费|利息|费用/.test(q))return '检测到�
 const next=amountMatch?{amount:cents(String(Number(amountMatch[1].replaceAll(',',''))*(amountMatch[2]?10000:1))),periods:Number($('periods').value)||6,fee:null,delay:30}:conversation?{...conversation}:null;
 if(!next)return '请先说明商品总价，再补充期数和费用。';if(next.amount<=0)throw Error('购买金额必须大于零');
 if(periodMatch){const n=Number(periodMatch[1]);if(!Number.isInteger(n)||n<2||n>36)throw Error('支持2–36期');next.periods=n;if(conversation&&n!==conversation.periods&&next.fee!==0)next.fee=null}
-if(delayMatch){next.delay=Number(delayMatch[1]);if(next.delay<1||next.delay>365)throw Error('延期支持1–365天')}else if(monthDelay)next.delay=30;
+if(delayMatch){next.delay=Number(delayMatch[1]);if(next.delay<1||next.delay>365)throw Error('延期支持1–365天')}else if(monthDelay)next.delay=Math.round((new Date(month(state.start,1)+'T12:00:00Z')-new Date(state.start+'T12:00:00Z'))/86400000);
 if(/(?:免息|无息).*(?:免手续费|无手续费)|(?:免手续费|无手续费).*(?:免息|无息)/.test(q))next.fee=0;
 const feeMatch=q.match(/(?:总费用|总手续费|手续费|总利息|利息|费用)(?:是|为|共|总共)?\s*(\d+(?:\.\d{1,2})?)\s*元/);if(feeMatch){if(/每期|每月/.test(q))return '这里需要整个分期期间的利息与手续费合计，请提供总费用。';next.fee=cents(feeMatch[1])}
 conversation=next;
+if(delayMatch||monthDelay){
+const date=add(state.start,next.delay),now=simulate([{date:state.start,amount:next.amount,name:'现在购买',kind:'expense'}]),later=simulate([{date,amount:next.amount,name:'延期购买',kind:'expense'}]),lift=later.min-now.min,inPeriod=date<=add(state.start,state.horizon-1);
+$('delay').value=next.delay;$('purchase').value=next.amount/100;
+if(next.fee!==null)compare(next.amount,next.periods,next.fee,next.delay);
+const warning=missing().length?'资料不足：'+coverageMessage()+'。以下仅为部分测算。\n':'';
+return warning+`这次只看晚一点买：沿用总价 ${money(next.amount)}，延期 ${next.delay} 天，在 ${date} 一次付清。\n\n延后购买：最低余额 ${money(later.min)}（${later.minDay}），期末余额 ${money(later.end)}，${later.gap?'首次缺口 '+later.gap:'已录入项目未出现负余额'}。\n现在购买：最低余额 ${money(now.min)}，期末余额 ${money(now.end)}。\n\n`+(lift>0?`延后购买让预测期最低余额提高 ${money(lift)}。`:lift===0?'两种方案的预测期最低余额相同；这说明等待期间仍会受到原有收支影响，不能据此认为推迟就更安全。':`延后购买的预测期最低余额反而减少 ${money(-lift)}，需结合届时还款与收入安排。`)+(inPeriod?(later.end===now.end?' 两种方案在同一期限内都支付相同总价，所以期末余额相同是正常的；主要差别在付款日期和期间余额。':''):` 购买日已在预测期之外，${money(next.amount)} 仍是期后付款义务，并没有省下这笔钱。`)+(next.delay===30?' 上一轮三方案中已包含“延后30天”，因此该方案本身的数字可能相同；本轮只对它作针对性解释。':'');
+}
+
 if(next.fee===null&&!/一次付清|全款/.test(q))return `记住了：商品总价 ${money(next.amount)}，${next.periods} 期。请补充是否免息且免手续费，或告诉我整个分期的总费用，例如“总费用120元”。`;
 if(/一次付清|全款/.test(q)&&next.fee===null){const result=simulate([{date:state.start,amount:next.amount,name:'新增购买',kind:'expense'}]);return `${missing().length?'资料不足：'+coverageMessage()+'。\n':''}按现在一次付清 ${money(next.amount)} 测算，最低余额 ${money(result.min)}（${result.minDay}），${result.gap?'首次缺口 '+result.gap:'已录入项目无负余额'}。如需比较分期，请补充整个分期的总费用。`}
 $('purchase').value=next.amount/100;$('periods').value=next.periods;$('fee').value=next.fee/100;$('delay').value=next.delay;
