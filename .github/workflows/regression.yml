@@ -28,3 +28,4 @@ jobs:
       - run: node tests/bank-columns.mjs
       - run: node tests/spending-history.cjs
       - run: node tests/history-dom.mjs
+      - run: node tests/setup-assessment-dom.mjs
