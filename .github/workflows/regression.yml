@@ -13,3 +13,5 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/regression.cjs
+      - run: node tests/pdf-import.mjs
+      - run: node tests/pdf-review.cjs
