@@ -32,3 +32,4 @@ jobs:
       - run: node tests/combined-settings-style.mjs
       - run: node tests/table-selection-dom.mjs
       - run: node tests/confirm-all-cash-dom.mjs
+      - run: node tests/semantic-classification.cjs
