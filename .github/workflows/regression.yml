@@ -24,3 +24,4 @@ jobs:
       - run: node tests/default-funding.cjs
       - run: node tests/funding-review-dom.mjs
       - run: node tests/direction.cjs
+      - run: node tests/budget-estimate.cjs
