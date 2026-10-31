@@ -30,3 +30,4 @@ jobs:
       - run: node tests/history-dom.mjs
       - run: node tests/setup-assessment-dom.mjs
       - run: node tests/combined-settings-style.mjs
+      - run: node tests/table-selection-dom.mjs
