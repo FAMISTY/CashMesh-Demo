@@ -33,3 +33,6 @@ jobs:
       - run: node tests/table-selection-dom.mjs
       - run: node tests/confirm-all-cash-dom.mjs
       - run: node tests/semantic-classification.cjs
+      - run: node tests/credit-dashboard.mjs
+      - run: node tests/notifications-dom.mjs
+      - run: node tests/synthetic-profile-dom.mjs
