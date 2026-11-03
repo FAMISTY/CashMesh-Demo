@@ -16,4 +16,21 @@ $('shotText').value=order;$('shotParse').click();assert.equal($('shotAmount').va
 $('shotText').value=order.replace('TESTORDER00000001','TESTORDER00000099');$('shotConfirm').click();assert.equal(C.getState().events.filter(e=>e.external==='TESTORDER00000099').length,1);assert.equal(C.getState().events.find(e=>e.external==='TESTORDER00000099').settlement,'credit');
 // Handoff pre-fills rather than silently committing uncertain OCR results.
 w.location.hash='#capture='+encodeURIComponent(order.replace('TESTORDER00000001','TESTORDER00000000'));w.dispatchEvent(new w.Event('hashchange'));assert.equal($('shotAmount').value,'1.99');assert.equal(C.getState().events.filter(e=>e.external==='TESTORDER00000000').length,0);
+const noisy=`10:57 :1 会 @3
+《 运输 中 66
+测 试 日 用 品 旗舰 店 ，
+商品 总 价 ¥6.99
+订单 运费 ¥0.00
+平台 优惠 立 减 5 元 -¥5.00
+确认 收 货 后 付 ¥1.99
+订单 编号 TESTORDER00000020 复制
+交易 快照 昌 发 生 争议 时 可 作为 判断 依据 >
+支付 方式 拌 音 月 付 >
+下 单 时 间 2026-11-02 01:23:46
+付款 时 间 2026-11-02 01:23:50
+发 货 时 间 2026-11-02 12:22:01
+更 多 信息 收 起 和
+@ 联系 商家
+服务 保障`;
+const fixed=parse(noisy);assert.equal(fixed.amount,'1.99');assert.equal(fixed.platform,'抖音月付');assert.equal(fixed.kind,'expense');assert.equal(fixed.timestamp.slice(0,10),'2026-11-02');assert.match(fixed.evidence.join('；'),/平台纠错/);assert.equal(parse('商品名 拌音月付 订单金额20').platform,'');$('shotText').value=noisy;$('shotParse').click();assert.equal($('shotPlatform').value,'抖音月付');assert.equal($('shotAmount').value,'1.99');assert.equal($('shotKind').value,'expense');assert.equal($('shotDate').value,'2026-11-02');
 console.log('PASS: deferred order, OCR whitespace/fullwidth amounts, competing prices, ambiguous totals, refund/repayment, invalid date, current-text submission and handoff review.');await w.happyDOM.abort();
