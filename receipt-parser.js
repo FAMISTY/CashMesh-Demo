@@ -11,7 +11,7 @@ function moneyTokens(text){
 // Discounts are deductions, never a payment candidate. Handle both same-line and split OCR.
 function isDiscount(text,token,cashback=false){
  const before=text.slice(0,token.index),line=before.split('\n').at(-1).trim(),previous=before.split('\n').slice(-2,-1)[0]||'';
- const context=(line||previous.trim()).replace(cashback?/好评返现|评价返现|返现/g:/$^/g,'到账奖励'),discount=/优惠|立减金|立减|减免|抵扣|补贴|折扣|优惠券|节省|已减|返现/;
+ const context=(line||previous.trim()).replace(cashback?/好评返现|评价返现|返现/g:/$^/g,'到账奖励'),discount=/优惠|共减|合计减|已优惠|立减金|立减|减免|抵扣|补贴|折扣|优惠券|节省|已减|返现/;
  const positive=/实付|实际支付|实际付款|应付|确认收货后付|到账金额|收款金额|退款金额|还款金额/;
  const d=[...context.matchAll(new RegExp(discount.source,'g'))].at(-1)?.index??-1,paid=[...context.matchAll(new RegExp(positive.source,'g'))].at(-1)?.index??-1;
  const after=text.slice(token.index+token.raw.length).split('\n')[0];
@@ -22,7 +22,7 @@ function fundingAccount(text,incoming=false){
  const m=text.match(incoming?/(?:到账账户|收款账户|收款方式|入账方式)\s*[:：]?\s*([^\n]+)/:/(?:支付方式|付款方式|扣款账户|付款账户|资金来源)\s*[:：]?\s*([^\n]+)/);if(!m)return '';
  let value=m[1].split(/交易单号|商户单号|订单编号|下单时间|支付时间|付款时间|当前状态|查看|更换/)[0].replace(/[>›]+$/,'').trim();
  const rest=text.slice(m.index+m[0].length),tail=rest.match(/^\s*\n[ \t]*(\((?:尾号)?[ \t]*\d{4}\))/);if(tail&&/银行|储蓄卡|信用卡/.test(value))value+=tail[1];
- return value.replace(/^[^\d\s]音月付/,'抖音月付').replace(/\d(?:[ -]?\d){7,}/g,x=>'尾号'+x.replace(/\D/g,'').slice(-4)).replace(/\((?:尾号)?[ \t]*(\d{4})\)/g,'（尾号$1）').slice(0,120);
+ return value.replace(/^先用后付支付$/,'先用后付').replace(/^[^\d\s]音月付/,'抖音月付').replace(/\d(?:[ -]?\d){7,}/g,x=>'尾号'+x.replace(/\D/g,'').slice(-4)).replace(/\((?:尾号)?[ \t]*(\d{4})\)/g,'（尾号$1）').slice(0,120);
 }
 function merchantName(text,wechat){
  const exact=text.match(/(?:^|\n)\s*(?:商户全称|商户名称|商家名称|收款方全称|交易对方|收款方|付款方|转账方|对方名称|商户|商家)\s*[:：]?\s*([^\n]+)/);
@@ -60,15 +60,18 @@ function parse(raw){const text=normalize(raw),flat=text.replace(/\s/g,''),warnin
  if(kind==='transfer'&&!destination&&/微信/.test(flat))destination='微信';
  const names={expense:'消费',income:'收入',transfer:'账户转账／提现',refund:'退款',repayment:'还款',statement:'账单汇总'};
  // Stop before IDs, times and unrelated service panels. Order-column OCR can put all four values after the final label.
- const start=text.search(/商品总价|订单总额|订单金额|确认收货后付|实付|提现金额|到账金额|交易金额|还款金额|退款金额/);
+ const start=text.search(/商品总价|订单总额|订单金额|确认收货后再付款|确认收货后付款|确认收货后付|实付|提现金额|到账金额|交易金额|还款金额|退款金额/);
  const region=(start>=0?text.slice(start):text).split(/订单编号|订单号|交易单号|交易快照|下单时间|付款时间|交易时间|服务保障|联系客服/)[0];
  let tokens=moneyTokens(region).filter(x=>!x.negative&&x.value>0&&!isDiscount(region,x,confirmedCashback)),amount='',basis='';
- const labels=kind==='transfer'?['到账金额','实际到账','提现金额','转账金额']:kind==='income'?['到账金额','收入金额','收款金额']:kind==='repayment'?['还款金额','本次还款']:kind==='refund'?['退款金额','实退金额']:kind==='statement'?['本期应还','应还金额','待还总额','账单金额']:['确认收货后付','实付金额','实付款','实际支付','实际付款','合计实付','实付','应付金额','待付金额','支付金额','交易金额'];
+ const labels=kind==='transfer'?['到账金额','实际到账','提现金额','转账金额']:kind==='income'?['到账金额','收入金额','收款金额']:kind==='repayment'?['还款金额','本次还款']:kind==='refund'?['退款金额','实退金额']:kind==='statement'?['本期应还','应还金额','待还总额','账单金额']:['确认收货后再付款','确认收货后付款','确认收货后付','实付价','实付金额','实付款','实际支付','实际付款','合计实付','实付','应付金额','待付金额','支付金额','交易金额'];
  const total=moneyTokens(region);
  // Multiple standalone monetary rows after the final payable label are a column block, not adjacent label-value pairs.
  const tailLabel=labels.find(label=>region.includes(label));let column=false;
  if(tailLabel){const tail=region.slice(region.indexOf(tailLabel)+tailLabel.length);column=moneyTokens(tail).length>1&&moneyTokens(tail).every(x=>{const before=tail.slice(0,x.index).split('\n').at(-1).trim();return !/[\u3400-\u9fff]/.test(before)});}
  if(!column){for(const label of labels){const escaped=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');const re=new RegExp(escaped+'\\s*[：:]?\\s*(?:[¥￥Ұ·•・‧∙⋅｡。]|RMB|CNY|人民币|\\.(?=\\d+\\.))?\\s*([0-9][0-9,，]*(?:\\s*\\.\\s*[0-9]{1,2})?)','i');const m=region.match(re);if(m){const n=Number(m[1].replace(/[\s,，]/g,''));if(n>0&&n<1e9){amount=n.toFixed(2);basis='标签：'+label;break;}}}}
+ // A deferred order may state its future debit above the price section. This is
+ // independent of the current paid amount (often zero), and of countdown digits.
+ if(!amount&&deferred){const debit=text.match(/自动扣款\s*[:：]?\s*(?:[¥￥Ұ]|人民币)?\s*(\d[\d,]*(?:\s*\.\s*\d{1,2})?)\s*元?/);if(debit){const value=Number(debit[1].replace(/[\s,]/g,''));if(value>0&&value<1e9){amount=value.toFixed(2);basis='先用后付：自动扣款金额';}}}
  // WeChat's headline is commonly a signed debit (e.g. -38.00). The minus is
  // the transaction direction, not a coupon. Never use a later benefit as fallback.
  if(!amount&&wechat){const header=text.split(/当前状态|支付方式|付款方式|商品说明|商户单号|交易单号|支付时间|交易时间|转账时间|原价|商品原价|优惠|银行卡立减金/)[0];const headline=moneyTokens(header).filter(x=>x.value>0&&!isDiscount(header,x,confirmedCashback));
