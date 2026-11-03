@@ -48,3 +48,4 @@ jobs:
       - run: node tests/account-manager.mjs
       - run: node tests/platform-consistency.mjs
       - run: node tests/journal-isolation-repayment.mjs
+      - run: node tests/journal-simple-review.mjs
