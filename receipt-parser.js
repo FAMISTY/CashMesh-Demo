@@ -18,15 +18,23 @@ function isDiscount(text,token){
  return d>paid || /^\s*元?\s*(?:银行卡)?(?:立减金|优惠|抵扣|补贴)/.test(after);
 }
 function wechatPage(flat){return /微信支付|微信账单/.test(flat)||(/账单详情|支付详情|交易详情/.test(flat)&&/零钱|财付通/.test(flat))||(/银行卡立减金/.test(flat)&&/支付成功|支付方式|当前状态/.test(flat));}
+function fundingAccount(text){
+ const m=text.match(/(?:支付方式|付款方式|扣款账户|付款账户|资金来源)\s*[:：]?\s*([^\n]+)/);if(!m)return '';
+ let value=m[1].split(/交易单号|商户单号|订单编号|下单时间|支付时间|付款时间|当前状态|查看|更换/)[0].replace(/[>›]+$/,'').trim();
+ const rest=text.slice(m.index+m[0].length),tail=rest.match(/^\s*\n[ \t]*(\((?:尾号)?[ \t]*\d{4}\))/);if(tail&&/银行|储蓄卡|信用卡/.test(value))value+=tail[1];
+ return value.replace(/^[^\d\s]音月付/,'抖音月付').replace(/\d(?:[ -]?\d){7,}/g,x=>'尾号'+x.replace(/\D/g,'').slice(-4)).replace(/\((?:尾号)?[ \t]*(\d{4})\)/g,'（尾号$1）').slice(0,120);
+}
 function parse(raw){const text=normalize(raw),flat=text.replace(/\s/g,''),warnings=[],evidence=[];
  const payment=(flat.match(/(?:支付方式|付款方式|支付渠道)[:：]?([^>›]{0,20})/)||[])[1]||'';
  let platform=(flat.match(/美团月付|抖音月付|花呗|白条|信用卡/)||[])[0]||'';
  if(!platform&&/[^\d\s]音月付/.test(payment)){platform='抖音月付';evidence.push('支付方式中的“×音月付”按抖音月付纠错，请核对');}
  if(!platform)platform=(flat.match(/小红书|微信|支付宝|抖音|美团|京东|淘宝|银行卡|现金/)||[])[0]||'其他';
- const deferred=/确认收货后付|收货后付款|先用后付|先享后付/.test(flat),credit=deferred||/月付|花呗|白条|信用卡/.test(platform);
+ const paymentAccount=fundingAccount(text)||(/月付|花呗|白条|信用卡/.test(platform)?platform:''),deferred=/确认收货后付|收货后付款|先用后付|先享后付/.test(flat),credit=deferred||/月付|花呗|白条|信用卡/.test(paymentAccount);
  let kind=/提现|转出到|转入到|账户划转|余额转入|余额转出/.test(flat)?'transfer':/还款成功|已还款|还款完成/.test(flat)?'repayment':/退款成功|已退款|退款完成/.test(flat)?'refund':/本期账单|本期应还|账单金额|待还总额/.test(flat)?'statement':/收入|到账|收款成功|工资|红包已领取/.test(flat)?'income':deferred||/支付成功|付款成功|交易成功|消费|付款时间|支付时间|实付|订单金额/.test(flat)?'expense':'';
  if(/订单已取消|交易关闭|待付款|等待付款|提现失败|提现处理中/.test(flat)){kind='';warnings.push('交易未完成或状态不明，请核对后选择类型');}
- const settlement=credit?'credit':'cash',wechat=wechatPage(flat);if(wechat){evidence.push('页面类型：微信支付详情');if(!/月付|花呗|白条|信用卡/.test(platform))platform='微信';}
+ const settlement=credit?'credit':'cash',wechat=wechatPage(flat);if(wechat){evidence.push('页面类型：微信支付详情');platform='微信';}
+ if(!wechat)platform=({'抖音月付':'抖音','美团月付':'美团','花呗':'支付宝','白条':'京东'})[platform]||platform;
+ if(!paymentAccount)warnings.push('付款账户未识别，请核对截图中的支付方式');else evidence.push('资金账户：'+paymentAccount);
  let destination=(flat.match(/(?:提现到|转入到|转出到|到账账户|收款账户)[:：]?(微信|支付宝|银行卡)/)||[])[1]||'';
  if(kind==='transfer'&&!destination&&/微信/.test(flat))destination='微信';
  const names={expense:'消费',income:'收入',transfer:'账户转账／提现',refund:'退款',repayment:'还款',statement:'账单汇总'};
@@ -55,7 +63,7 @@ function parse(raw){const text=normalize(raw),flat=text.replace(/\s/g,''),warnin
  const merchant=(text.match(/(?:商户|商家|收款方|交易对方)\s*[：:]\s*([^\n]+)/)||[])[1]||(text.match(/([^\n]{2,45}(?:旗舰店|专卖店|专营店))/)||[])[1]||'';
  if(kind==='transfer')evidence.push('提现默认作为自有账户间转账，不重复计为收入；若是首次取得的报酬，请改选收入');
  if(deferred)evidence.push('先用后付：计入消费，现金尚待扣款');
- return {platform,kind,amount,date,timestamp:date,settlement,deferred,destination,merchant,transactionId,evidence,warnings,kindLabel:names[kind]||'待确认',text:String(raw||'')};
+ return {platform,paymentAccount,kind,amount,date,timestamp:date,settlement,deferred,destination,merchant,transactionId,evidence,warnings,kindLabel:names[kind]||'待确认',text:String(raw||'')};
 }
 const api={parse,normalize,moneyTokens};root.CashMeshReceipt=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

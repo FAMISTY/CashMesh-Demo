@@ -41,3 +41,4 @@ jobs:
       - run: node tests/journal-dom.mjs
       - run: node tests/cloud-db.mjs
       - run: node tests/wechat-amount.mjs
+      - run: node tests/payment-account.mjs
