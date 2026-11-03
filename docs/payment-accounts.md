@@ -13,7 +13,7 @@
 
 验证：tests/payment-account.mjs、tests/wechat-amount.mjs、tests/journal-dom.mjs、tests/cloud-db.mjs。
 
-待完成：Supabase 云端 RPC 更新确认连续超时，当前未应用，网页尚未发布。
+云端 RPC 已更新。真实数据库验证通过：资金账户、交易平台可保存，银行卡全号仅保留尾号，旧客户端不传新字段时不覆盖已保存值。测试事务已回滚，不修改真实账目。
 
 ## 交易平台与商户
 
