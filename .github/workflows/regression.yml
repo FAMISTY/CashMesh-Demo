@@ -43,3 +43,4 @@ jobs:
       - run: node tests/wechat-amount.mjs
       - run: node tests/payment-account.mjs
       - run: node tests/platform-merchant.mjs
+      - run: node tests/account-picker.mjs
