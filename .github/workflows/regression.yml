@@ -39,3 +39,4 @@ jobs:
       - run: node tests/screenshot-dom.mjs
       - run: node tests/screenshot-accuracy.mjs
       - run: node tests/journal-dom.mjs
+      - run: node tests/cloud-db.mjs
