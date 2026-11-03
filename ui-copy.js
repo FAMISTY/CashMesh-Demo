@@ -3,7 +3,7 @@
 ['浏览器账单演示版','账单与消费分析'],
 ['把分散的账单，变成看得懂的选择。','账单放一起，花钱更有数。'],
 ['历史账单了解消费习惯，新增通知更新本月状态，购买前比较现在买、延后买与分期买。','看看平时花了多少，再算一算这次买不买、怎么买。'],
-['文件在你的浏览器内解析，不发送至服务器。此页面提供确定性规则测算，未接入大模型或银行通知自动同步。','账单在本机处理，不会上传。以下结果按已导入记录和你填写的预算计算，暂不自动获取银行或支付平台通知。'],
+['文件在你的浏览器内解析，不发送至服务器。此页面提供确定性规则测算，未接入大模型或银行通知自动同步。','轻点手机背面，快捷指令自动截图、识别文字并打开日常记账页。核对保存后，手机和电脑可通过配对码共用账本。'],
 ['1. 上传账单，或使用合成数据','1. 导入账单'],
 ['先选择数据来源，整理完成后查看消费习惯，再设置期初余额和预算。','上传自己的账单，也可以先用示例试一试。'],
 ['加载合成样例','试用示例账单'],
@@ -56,13 +56,13 @@
 ['数据与演示范围','数据保存与说明'],
 ['在此浏览器保留账单与条件（同一设备使用者可访问）','在此浏览器保存账单和设置'],
 ['导出测算及条件 JSON','导出测算结果'],
-['默认仅在当前页面内存中处理。余额以用户输入为基准；待确认、未知资金来源、未录入还款、收入变化和应急支出都可能改变结果。日终余额不表示同日各笔交易间始终有足够资金。合成样例仅用于功能展示。此静态版没有账号登录、服务器数据库、多用户协作、大模型 API 或真实通知接入。','主页面勾选保存后，下次可在同一浏览器继续使用。日常记账支持配对码云端同步，主页面账单与设置仍保存在本机。测算以你填写的余额和预算为准，漏记的还款、临时开支及收入变化会影响结果；日终余额充足也不保证当天每一时刻都有足够资金。示例账单为模拟数据，问答采用规则计算，暂不接入大模型或平台通知。'],
+['默认仅在当前页面内存中处理。余额以用户输入为基准；待确认、未知资金来源、未录入还款、收入变化和应急支出都可能改变结果。日终余额不表示同日各笔交易间始终有足够资金。合成样例仅用于功能展示。此静态版没有账号登录、服务器数据库、多用户协作、大模型 API 或真实通知接入。','主页面的账单与预算可保存在当前浏览器，日常记账可用配对码连接手机和电脑。花费按保存的记录统计，购买方案按余额、预算和还款安排计算。示例账单为模拟数据，可先试用，再导入自己的账单。'],
 ['CashMesh · 本页面用于比赛交互演示。测算不构成征信评分、贷款审批或投资建议。','CashMesh 钱网 · 比赛演示版。测算供个人预算参考，不代表征信结果或贷款审批意见。'],
 ['详细捕获、逐笔记录与日／周／月图表在独立记账页。这里显示上次更新时的近30天数据。','查看上次更新的近30天收支。新增记录和详细图表请打开日常记账。'],
 ['打开详细记账 →','打开日常记账 →'],
 ['上传账单或加载合成数据后，这里展示最近一年消费趋势与习惯；不足一年按实际覆盖期分析。','导入账单后查看消费变化。不足一年时，按已有记录统计。'],
 ['请先上传账单或加载合成数据，暂未估算每日消费。','导入账单后，可参考平均日常开销设置预算。'],
-['尚未更新。点击“更新”读取同一浏览器的记账数据；自有账户转账不计入消费或收入。','还没有更新过。点击“更新”载入记账页的记录；本人账户之间的转账不计入收支。'],
+['尚未更新。点击“更新”读取同一浏览器的记账数据；自有账户转账不计入消费或收入。','点击“更新”，把记账页已保存的记录汇总到这里。本人账户之间的转账单独列示。'],
 ['待核对信用义务与还款计划（含以前月份）','待核对欠款与还款安排（含往月）'],
 ['② 本月消费与信用支付监测','② 本月消费与信用付款'],
 ['交互已就绪 · Enter 发送，Shift + Enter 换行','可以开始提问了'],
@@ -74,6 +74,6 @@
 ['已更新记录','记录笔数']
 ]);
 const blocked='script,style,textarea,input,select,option,code,pre,tbody,[contenteditable],#recordList,#receiptText';
-function rewrite(root){if(!root||root.nodeType!==1)return;const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.parentElement?.closest(blocked))continue;const original=n.nodeValue,key=original.trim();let next=copy.get(key);if(!next&&key.startsWith('通知文件上传／账单整合 · 尚未连接实时接口 · 最近记录 '))next=key.replace('通知文件上传／账单整合 · 尚未连接实时接口 · 最近记录 ','最近一笔：').replace('。按自然月统计，历史月份不冒充本月数据。','。本栏只统计本月，记录需手动导入或更新。');if(next&&next!==key)n.nodeValue=original.replace(key,next)}}
+function rewrite(root){if(!root||root.nodeType!==1)return;const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){if(n.parentElement?.closest(blocked))continue;const original=n.nodeValue,key=original.trim();let next=copy.get(key);if(!next&&key.startsWith('通知文件上传／账单整合 · 尚未连接实时接口 · 最近记录 '))next=key.replace('通知文件上传／账单整合 · 尚未连接实时接口 · 最近记录 ','最近一笔：').replace('。按自然月统计，历史月份不冒充本月数据。','。本栏按自然月汇总，保存新记录后点击“更新”。');if(next&&next!==key)n.nodeValue=original.replace(key,next)}}
 rewrite(document.body);let queued=false;const observer=new MutationObserver(()=>{if(queued)return;queued=true;queueMicrotask(()=>{queued=false;observer.disconnect();rewrite(document.body);observer.observe(document.body,{childList:true,subtree:true,characterData:true})})});observer.observe(document.body,{childList:true,subtree:true,characterData:true});
 })();
