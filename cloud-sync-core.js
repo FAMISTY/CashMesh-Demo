@@ -1,6 +1,6 @@
 /* Offline outbox and optimistic record versions. Does not depend on the UI or provider SDK. */
 (function(root){'use strict';
-const fields=['id','date','kind','platform','amount','settlement','merchant','destination','transactionId','sync','createdAt','updatedAt'];
+const fields=['id','date','kind','platform','businessPlatform','amount','settlement','paymentAccount','merchant','destination','transactionId','sync','createdAt','updatedAt'];
 function clean(row){const result={};for(const k of fields)if(row[k]!==undefined)result[k]=row[k];return result;}
 class Engine{
  constructor({storage,key,read,write,rpc,id}){Object.assign(this,{storage,key,read,write,rpc,id});this.s=JSON.parse(storage.getItem(key)||'{"cursor":0,"versions":{},"observed":{},"pending":{}}');this.running=false;this.flight=new Set();}
