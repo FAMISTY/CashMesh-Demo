@@ -37,7 +37,8 @@ function businessPlatform(text,merchant){
  const specific=text.match(new RegExp('(?:交易平台|消费平台|购物平台|订单来源|交易来源|来源平台)\\s*[:：]?\\s*('+names+')'));
  if(specific)return specific[1];
  const fromMerchant=merchant.match(new RegExp(names));if(fromMerchant)return fromMerchant[0];
- const apps=[...new Set(text.match(new RegExp(names,'g'))||[])];return apps.length===1?apps[0]:'';
+ const apps=[...new Set(text.match(new RegExp(names,'g'))||[])];if(apps.length===1)return apps[0];if(apps.length>1)return '';
+ const flat=text.replace(/\s/g,'');if(/多多支付|多多钱包|拼单成功|拼单已成功|拼单返现|拼小圈/.test(flat))return '拼多多';return '';
 }
 function parse(raw){const text=normalize(raw),flat=text.replace(/\s/g,''),warnings=[],evidence=[];
  const payment=(flat.match(/(?:支付方式|付款方式|支付渠道)[:：]?([^>›]{0,20})/)||[])[1]||'';
@@ -85,10 +86,12 @@ function parse(raw){const text=normalize(raw),flat=text.replace(/\s/g,''),warnin
  const dateMatch=text.match(/20\d{2}\s*[-/年]\s*\d{1,2}\s*[-/月]\s*\d{1,2}/);let date='';if(dateMatch){const [y,m,d]=dateMatch[0].match(/\d+/g),v=`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`,check=new Date(v+'T12:00:00Z');if(!isNaN(check)&&check.toISOString().slice(0,10)===v)date=v;}
  if(!date)warnings.push('未识别日期，已按记录日预填，请核对');
  const transactionId=(flat.match(/(?:订单编号|订单号|交易单号|交易号|提现单号)[:：]?([A-Za-z0-9-]{8,})/)||[])[1]||'';
- const merchant=merchantName(text,wechat),business=businessPlatform(text,merchant);if(business)evidence.push('交易平台：'+business);if(!merchant)warnings.push('商户未识别，可补充商户或用途');
+ const merchant=merchantName(text,wechat),business=businessPlatform(text,merchant);
+ const orderPage=/商品总价|订单运费|拼单成功|拼单已成功|订单信息|订单编号/.test(flat)&&!/财付通|全部账单|当前状态/.test(flat);
+ const billChannel=orderPage?'其他':wechat?'微信':/支付宝账单|支付宝交易详情/.test(flat)?'支付宝':'其他';if(business)evidence.push('交易平台：'+business);if(!merchant)warnings.push('商户未识别，可补充商户或用途');
  if(kind==='transfer')evidence.push('提现默认作为自有账户间转账，不重复计为收入；若是首次取得的报酬，请改选收入');
  if(deferred)evidence.push('先用后付：计入消费，现金尚待扣款');
- return {platform,businessPlatform:business,paymentAccount,kind,amount,date,timestamp:date,settlement,deferred,destination,merchant,transactionId,evidence,warnings,kindLabel:names[kind]||'待确认',text:String(raw||'')};
+ return {platform,billChannel,businessPlatform:business,paymentAccount,kind,amount,date,timestamp:date,settlement,deferred,destination,merchant,transactionId,evidence,warnings,kindLabel:names[kind]||'待确认',text:String(raw||'')};
 }
 const api={parse,normalize,moneyTokens};root.CashMeshReceipt=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

@@ -46,3 +46,4 @@ jobs:
       - run: node tests/account-picker.mjs
       - run: node tests/deferred-price.mjs
       - run: node tests/account-manager.mjs
+      - run: node tests/platform-consistency.mjs
