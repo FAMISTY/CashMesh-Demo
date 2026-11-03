@@ -37,3 +37,4 @@ jobs:
       - run: node tests/notifications-dom.mjs
       - run: node tests/synthetic-profile-dom.mjs
       - run: node tests/screenshot-dom.mjs
+      - run: node tests/screenshot-accuracy.mjs
