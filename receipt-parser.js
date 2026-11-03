@@ -26,7 +26,7 @@ function parse(raw){const text=normalize(raw),flat=text.replace(/\s/g,''),warnin
  const deferred=/确认收货后付|收货后付款|先用后付|先享后付/.test(flat),credit=deferred||/月付|花呗|白条|信用卡/.test(platform);
  let kind=/提现|转出到|转入到|账户划转|余额转入|余额转出/.test(flat)?'transfer':/还款成功|已还款|还款完成/.test(flat)?'repayment':/退款成功|已退款|退款完成/.test(flat)?'refund':/本期账单|本期应还|账单金额|待还总额/.test(flat)?'statement':/收入|到账|收款成功|工资|红包已领取/.test(flat)?'income':deferred||/支付成功|付款成功|交易成功|消费|付款时间|支付时间|实付|订单金额/.test(flat)?'expense':'';
  if(/订单已取消|交易关闭|待付款|等待付款|提现失败|提现处理中/.test(flat)){kind='';warnings.push('交易未完成或状态不明，请核对后选择类型');}
- const settlement=credit?'credit':'cash',wechat=wechatPage(flat);if(wechat)evidence.push('页面类型：微信支付详情');
+ const settlement=credit?'credit':'cash',wechat=wechatPage(flat);if(wechat){evidence.push('页面类型：微信支付详情');if(!/月付|花呗|白条|信用卡/.test(platform))platform='微信';}
  let destination=(flat.match(/(?:提现到|转入到|转出到|到账账户|收款账户)[:：]?(微信|支付宝|银行卡)/)||[])[1]||'';
  if(kind==='transfer'&&!destination&&/微信/.test(flat))destination='微信';
  const names={expense:'消费',income:'收入',transfer:'账户转账／提现',refund:'退款',repayment:'还款',statement:'账单汇总'};
@@ -42,7 +42,7 @@ function parse(raw){const text=normalize(raw),flat=text.replace(/\s/g,''),warnin
  if(!column){for(const label of labels){const escaped=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');const re=new RegExp(escaped+'\\s*[：:]?\\s*(?:[¥￥Ұ·•・‧∙⋅｡。]|RMB|CNY|人民币|\\.(?=\\d+\\.))?\\s*([0-9][0-9,，]*(?:\\s*\\.\\s*[0-9]{1,2})?)','i');const m=region.match(re);if(m){const n=Number(m[1].replace(/[\s,，]/g,''));if(n>0&&n<1e9){amount=n.toFixed(2);basis='标签：'+label;break;}}}}
  // WeChat's headline is commonly a signed debit (e.g. -38.00). The minus is
  // the transaction direction, not a coupon. Never use a later benefit as fallback.
- if(!amount&&wechat){const header=text.split(/当前状态|支付方式|付款方式|商品说明|商户单号|交易单号|支付时间|交易时间|转账时间|优惠信息|银行卡立减金/)[0];const headline=moneyTokens(header).filter(x=>x.value>0&&!isDiscount(header,x));
+ if(!amount&&wechat){const header=text.split(/当前状态|支付方式|付款方式|商品说明|商户单号|交易单号|支付时间|交易时间|转账时间|原价|商品原价|优惠|银行卡立减金/)[0];const headline=moneyTokens(header).filter(x=>x.value>0&&!isDiscount(header,x));
   if(headline.length===1){amount=headline[0].value.toFixed(2);basis='微信支付详情顶部主金额';if(!kind&&headline[0].negative)kind='expense';}
   else if(headline.length>1){warnings.push('微信详情顶部有多个金额，无法确认实付，请核对');}
  }
